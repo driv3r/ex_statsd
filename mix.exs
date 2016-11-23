@@ -44,8 +44,11 @@ defmodule ExStatsD.Mixfile do
   #
   # Type `mix help deps` for more examples and options
   defp deps do
-    [{:ex_doc, "~> 0.10", only: :dev},
-     {:earmark, "~> 0.1", only: :dev}]
+    [
+      {:config_ext, "~> 0.3"},
+      {:ex_doc, "~> 0.10", only: :dev},
+      {:earmark, "~> 0.1", only: :dev}
+    ]
   end
 
 end
