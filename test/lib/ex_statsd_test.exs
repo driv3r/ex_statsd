@@ -1,66 +1,81 @@
 defmodule ExStatsDTest do
   use ExUnit.Case
 
+  import TestSupport, only: [with_sys: 2, with_app: 2]
+
   describe "with non-default options" do
     test "override name through options" do
       name = :dog_data
-      options = [name: name]
 
-      {:ok, pid} = ExStatsD.start_link(options)
-
-      assert Process.whereis(:dog_data) === pid
-      ExStatsD.stop :dog_data
+      with_statsd [name: name], fn(pid) ->
+        assert Process.whereis(name) === pid
+      end
     end
 
     test "override port through options" do
       port = 8080
-      options = [port: port]
 
-      {:ok, _pid} = ExStatsD.start_link(options)
-
-      assert state.port == port
-
-      ExStatsD.stop
+      with_statsd [port: port], fn(_) ->
+        assert state.port == port
+      end
     end
 
     test "override host through options" do
       host = "the_thing"
-      options = [host: host]
 
-      {:ok, _pid} = ExStatsD.start_link(options)
-
-      assert state.host == String.to_atom(host)
-      ExStatsD.stop
+      with_statsd [host: host], fn(_) ->
+        assert state.host == String.to_atom(host)
+      end
     end
 
     test "override namespace through options" do
       namespace = "a_good_namespace"
-      options = [namespace: namespace]
 
-      {:ok, _pid} = ExStatsD.start_link(options)
-
-      assert state.namespace == namespace
-      ExStatsD.stop
+      with_statsd [namespace: namespace], fn(_) ->
+        assert state.namespace == namespace
+      end
     end
 
     test "override sink through options" do
       sink = "everything_except_the_kitchen_sink"
-      options = [sink: sink]
 
-      {:ok, _pid} = ExStatsD.start_link(options)
-
-      assert state.sink == sink
-      ExStatsD.stop
+      with_statsd [sink: sink], fn(_) ->
+        assert state.sink == sink
+      end
     end
 
     test "transmits data through correct server" do
       options = [name: :the_name]
-      {:ok, _pid} = ExStatsD.start_link(options)
 
-      1..100 |> ExStatsD.count("items", options)
+      with_statsd options, fn(_) ->
+        1..100 |> ExStatsD.count("items", options)
 
-      assert sent(:the_name) == ["test.items:100|c"]
-      ExStatsD.stop :the_name
+        assert sent(:the_name) == ["test.items:100|c"]
+      end
+    end
+
+    test "transmits tags from config" do
+      option_tags = ["app:web", "version:0.5.0"]
+      env_tags = "env:staging,version:0.6.0"
+
+      with_sys env_tags, fn ->
+        with_app :tags, fn ->
+          with_statsd [tags: option_tags], fn(_) ->
+            ExStatsD.increment("events", tags: ["foo", "bar", "version:0.5.0"])
+            assert sent == ["test.events:1|c|#app:web,version:0.5.0,foo,bar"]
+          end
+        end
+      end
+    end
+
+    defp with_statsd({:ok, pid}, func) do
+      func.(pid)
+    after
+      ExStatsD.stop(pid)
+    end
+
+    defp with_statsd(options, func) do
+      with_statsd ExStatsD.start_link(options), func
     end
   end
 

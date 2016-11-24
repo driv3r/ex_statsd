@@ -286,18 +286,24 @@ defmodule ExStatsD do
   @doc false
   def handle_cast({:transmit, message, options, sample_rate}, %{sink: sink} = state) when is_list(sink) do
     tags = Keyword.get(options, :tags, [])
-    pkt = message |> packet(state.namespace, tags, sample_rate)
+    pkt = message |> packet(state.namespace, concat_tags(state, tags), sample_rate)
     {:noreply, %{state | sink: [pkt | sink]}}
   end
 
   @doc false
   def handle_cast({:transmit, message, options, sample_rate}, state) do
     tags = Keyword.get(options, :tags, [])
-    pkt = message |> packet(state.namespace, tags, sample_rate)
+    pkt = message |> packet(state.namespace, concat_tags(state, tags), sample_rate)
     {:ok, socket} = :gen_udp.open(0, [:binary])
     :gen_udp.send(socket, state.host, state.port, pkt)
     :gen_udp.close(socket)
     {:noreply, state}
+  end
+
+  defp concat_tags(%{tags: state_tags}, context_tags) do
+    state_tags
+    |> Enum.concat(context_tags)
+    |> Enum.uniq
   end
 
   @doc false
