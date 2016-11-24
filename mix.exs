@@ -3,10 +3,11 @@ defmodule ExStatsD.Mixfile do
 
   def project do
     [app: :ex_statsd,
-     version: "0.5.3",
-     elixir: "~> 1.0",
+     version: "0.6.0",
+     elixir: "~> 1.3",
      package: package,
      deps: deps,
+
      # Documentation
      name: "ex_statsd",
      source_url: "https://github.com/CargoSense/ex_statsd",
@@ -15,34 +16,24 @@ defmodule ExStatsD.Mixfile do
 
   defp package do
     [description: "A StatsD client for Elixir",
-     maintainers: ["Bruce Williams"],
+     maintainers: ["Bruce Williams", "Leszek Zalewski"],
      licenses: ["MIT"],
-     links: %{github: "https://github.com/CargoSense/ex_statsd"}]
+     links: %{github: "https://github.com/driv3r/ex_statsd"}]
   end
 
-  # Configuration for the OTP application
-  #
-  # Type `mix help compile.app` for more information
   def application do
     application(Mix.env)
   end
+
   def application(:test) do
     [applications: []]
   end
+
   def application(_) do
-    [applications: [],
+    [applications: [:config_ext],
      mod: {ExStatsD.Application, []}]
   end
 
-  # Dependencies can be Hex packages:
-  #
-  #   {:mydep, "~> 0.3.0"}
-  #
-  # Or git/path repositories:
-  #
-  #   {:mydep, git: "https://github.com/elixir-lang/mydep.git", tag: "0.1.0"}
-  #
-  # Type `mix help deps` for more examples and options
   defp deps do
     [
       {:config_ext, "~> 0.3"},
@@ -50,5 +41,4 @@ defmodule ExStatsD.Mixfile do
       {:earmark, "~> 0.1", only: :dev}
     ]
   end
-
 end
