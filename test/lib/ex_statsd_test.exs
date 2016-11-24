@@ -9,6 +9,7 @@ defmodule ExStatsDTest do
       {:ok, pid} = ExStatsD.start_link(options)
 
       assert Process.whereis(:dog_data) === pid
+      ExStatsD.stop :dog_data
     end
 
     test "override port through options" do
@@ -18,6 +19,8 @@ defmodule ExStatsDTest do
       {:ok, _pid} = ExStatsD.start_link(options)
 
       assert state.port == port
+
+      ExStatsD.stop
     end
 
     test "override host through options" do
@@ -27,6 +30,7 @@ defmodule ExStatsDTest do
       {:ok, _pid} = ExStatsD.start_link(options)
 
       assert state.host == String.to_atom(host)
+      ExStatsD.stop
     end
 
     test "override namespace through options" do
@@ -36,6 +40,7 @@ defmodule ExStatsDTest do
       {:ok, _pid} = ExStatsD.start_link(options)
 
       assert state.namespace == namespace
+      ExStatsD.stop
     end
 
     test "override sink through options" do
@@ -45,6 +50,7 @@ defmodule ExStatsDTest do
       {:ok, _pid} = ExStatsD.start_link(options)
 
       assert state.sink == sink
+      ExStatsD.stop
     end
 
     test "transmits data through correct server" do
@@ -54,6 +60,7 @@ defmodule ExStatsDTest do
       1..100 |> ExStatsD.count("items", options)
 
       assert sent(:the_name) == ["test.items:100|c"]
+      ExStatsD.stop :the_name
     end
   end
 
