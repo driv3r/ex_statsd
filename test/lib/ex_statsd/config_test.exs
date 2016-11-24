@@ -1,6 +1,8 @@
 defmodule ExStatsD.ConfigTest do
   use ExUnit.Case
 
+  import TestSupport, only: [with_sys: 2, with_app: 2]
+
   test "merge: default values merged with ex_statsd app config" do
     assert ExStatsD.Config.merge([sink: "foo"]) === %{
       port: 8125,
@@ -14,7 +16,7 @@ defmodule ExStatsD.ConfigTest do
 
   test "merge: when using system env vars" do
     with_sys "foo,bar,baz", fn ->
-      with_app :tags, {:system, var}, fn ->
+      with_app :tags, fn ->
         config = ExStatsD.Config.merge([])
         assert config[:tags] === ~w(foo bar baz)
       end
@@ -22,7 +24,7 @@ defmodule ExStatsD.ConfigTest do
   end
 
   test "merge: when system var is empty" do
-    with_app :tags, {:system, var}, fn ->
+    with_app :tags, fn ->
       config = ExStatsD.Config.merge([])
       assert config[:tags] === []
     end
@@ -30,7 +32,7 @@ defmodule ExStatsD.ConfigTest do
 
   test "merge: when system var and options were given, returns options" do
     with_sys "foo,bar,baz", fn ->
-      with_app :tags, {:system, var}, fn ->
+      with_app :tags, fn ->
         config = ExStatsD.Config.merge([tags: ~w(db perf)])
         assert config[:tags] === ~w(db perf)
       end
@@ -39,7 +41,7 @@ defmodule ExStatsD.ConfigTest do
 
   test "merge: parses host correctly" do
     with_sys "localhost", fn ->
-      with_app :host, {:system, var}, fn ->
+      with_app :host, fn ->
         config = ExStatsD.Config.merge([])
         assert config[:host] === :localhost
       end
@@ -51,29 +53,9 @@ defmodule ExStatsD.ConfigTest do
   end
 
   test "merge: when host is empty, uses default host" do
-    with_app :host, {:system, var}, fn ->
+    with_app :host, fn ->
       config = ExStatsD.Config.merge([])
       assert config[:host] === {127, 0, 0, 1}
     end
-  end
-
-  defp var, do: "5689bec05b9b4acba45ddc2a0a61d693_exstasd_test"
-
-  defp with_sys(value, func) do
-    System.put_env(var, value)
-    func.()
-  after
-    System.delete_env(var)
-  end
-
-  defp with_app(name, val, func) do
-    with_app name, val, Application.get_env(:ex_statsd, name), func
-  end
-
-  defp with_app(name, val, old, func) do
-    Application.put_env(:ex_statsd, name, val)
-    func.()
-  after
-    Application.put_env(:ex_statsd, name, old)
   end
 end
