@@ -14,33 +14,39 @@ defmodule ExStatsD.Config do
   in default value, i.e.: `{:system, "ENV_VAR_NAME", "some default"}`.
   """
 
-  @default_port 8125
-  @default_host "127.0.0.1"
-  @default_namespace nil
-  @default_tags []
-  @default_sink nil
+  @defaults %{
+    port: 8125,
+    host: "127.0.0.1",
+    namespace: nil,
+    tags: [],
+    sink: nil
+  }
 
   @doc """
-  Generates config map based on application configuration & environment variables.
+  Generates config map based on application configuration, environment variables and given options.
   """
-  def generate do
+  def merge(options) do
     %{
-      port:      get(:port, @default_port) |> parse_port,
-      host:      get(:host, @default_host) |> parse_host,
-      namespace: get(:namespace, @default_namespace),
-      tags:      get(:tags, @default_tags) |> parse_tags,
-      sink:      get(:sink, @default_sink),
+      port:      fetch(options, :port) |> parse_port,
+      host:      fetch(options, :host) |> parse_host,
+      tags:      fetch(options, :tags) |> parse_tags,
+      namespace: fetch(options, :namespace),
+      sink:      fetch(options, :sink),
       socket:    nil
     }
   end
 
-  defp get(option, default) do
-    ConfigExt.get_env(:ex_statsd, option, default)
+  defp fetch(list, key) do
+    Keyword.get(
+      list,
+      key,
+      ConfigExt.get_env(:ex_statsd, key, @defaults[key])
+    )
   end
 
   defp parse_port(port) when is_integer(port), do: port
   defp parse_port(port) when is_bitstring(port), do: port |> String.to_integer
-  defp parse_port(port) when is_nil(port), do: 8125
+  defp parse_port(_), do: @defaults[:port]
 
   defp parse_host(host) when is_binary(host) do
     case host |> to_char_list |> :inet.parse_address do
@@ -48,6 +54,8 @@ defmodule ExStatsD.Config do
       {:ok, address} -> address
     end
   end
+
+  defp parse_host(_), do: parse_host(@defaults[:host])
 
   defp parse_tags(nil), do: []
   defp parse_tags(""),  do: []

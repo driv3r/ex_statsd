@@ -2,21 +2,11 @@ defmodule ExStatsD do
   @moduledoc """
   Settings are taken from the `ex_statsd` application configuration.
 
-  The following are used to connect to your statsd server:
-
-   * `host`: The hostname or IP address (default: 127.0.0.1)
-   * `port`: The port number (default: 8125)
-
-  You can also provide an optional `namespace` to automatically nest all
-  stats.
+  See `ExStatsD.Config` for all the options.
   """
 
   use GenServer
 
-  @default_port 8125
-  @default_host "127.0.0.1"
-  @default_namespace nil
-  @default_sink nil
   @timing_stub 1.234
 
   # CLIENT
@@ -29,20 +19,19 @@ defmodule ExStatsD do
   @type sink :: String.t
   @type name :: String.t
   @type namespace :: String.t
+  @type tags :: List
   @type options :: [
     port: statsd_port,
     host: host,
     namespace: namespace,
     sink: sink,
-    name: name
+    name: name,
+    tags: tags
   ]
   @spec start_link(options) :: {:ok, pid}
   def start_link(options \\ []) do
-    state = %{port:      Keyword.get(options, :port, default_config(:port, @default_port)),
-              host:      Keyword.get(options, :host, default_config(:host, @default_host)) |> parse_host,
-              namespace: Keyword.get(options, :namespace, default_config(:namespace, @default_namespace)),
-              sink:      Keyword.get(options, :sink, default_config(:sink, @default_sink)),
-              socket:    nil}
+    state = ExStatsD.Config.merge(options)
+
     GenServer.start_link(__MODULE__, state, Keyword.merge([name: __MODULE__], options))
   end
 
@@ -59,14 +48,6 @@ defmodule ExStatsD do
   @spec flush :: :ok
   def flush(name \\__MODULE__) do
     GenServer.call(name, :flush)
-  end
-
-  @doc false
-  defp parse_host(host) when is_binary(host) do
-    case host |> to_char_list |> :inet.parse_address do
-      {:error, _}    -> host |> String.to_atom
-      {:ok, address} -> address
-    end
   end
 
   # API
@@ -256,10 +237,6 @@ defmodule ExStatsD do
           fun.()
       end
     end
-  end
-
-  defp default_config(key, fallback) do
-    Application.get_env(:ex_statsd, key, fallback)
   end
 
   defp default_options, do: [sample_rate: 1, tags: [], name: __MODULE__]
