@@ -14,7 +14,7 @@ defmodule ExStatsD.ConfigTest do
 
   test "generate: when using system env vars" do
     with_sys "foo,bar,baz", fn ->
-      with_app :tags, {:system, var}, fn ->
+      with_app :tags, {:system, var()}, fn ->
         config = ExStatsD.Config.generate
         assert config[:tags] == ~w(foo bar baz)
       end
@@ -22,14 +22,14 @@ defmodule ExStatsD.ConfigTest do
   end
 
   test "generate: when system var is empty" do
-    with_app :tags, {:system, var}, fn ->
+    with_app :tags, {:system, var()}, fn ->
       config = ExStatsD.Config.generate
       assert config[:tags] == []
     end
   end
 
   test "generate: when system var is empty but default was given" do
-    with_app :tags, {:system, var, ~w(db perf)}, fn ->
+    with_app :tags, {:system, var(), ~w(db perf)}, fn ->
       config = ExStatsD.Config.generate
       assert config[:tags] == ~w(db perf)
     end
@@ -37,7 +37,7 @@ defmodule ExStatsD.ConfigTest do
 
   test "generate: when syustem var is present & default given" do
     with_sys "foo,bar,baz", fn ->
-      with_app :tags, {:system, var, ~w(db perf)}, fn ->
+      with_app :tags, {:system, var(), ~w(db perf)}, fn ->
         config = ExStatsD.Config.generate
         assert config[:tags] == ~w(foo bar baz)
       end
@@ -47,9 +47,9 @@ defmodule ExStatsD.ConfigTest do
   defp var, do: "5689bec05b9b4acba45ddc2a0a61d693_exstasd_test"
 
   defp with_sys(value, func) do
-    System.put_env(var, value)
+    System.put_env(var(), value)
     func.()
-    System.delete_env(var)
+    System.delete_env(var())
   end
 
   defp with_app(name, val, func) do
