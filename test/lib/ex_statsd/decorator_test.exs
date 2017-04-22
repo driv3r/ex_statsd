@@ -1,8 +1,6 @@
 defmodule ExStatsD.DecoratorTest do
   use ExUnit.Case, async: false
 
-  @stubbed_timing 1.234
-
   defmodule DecoratedModule do
     use ExStatsD.Decorator
 
@@ -47,9 +45,6 @@ defmodule ExStatsD.DecoratorTest do
 
   setup do
     {:ok, pid} = ExStatsD.start_link
-    # Lets cheat for sampling here. Setting the seed like this should set the
-    # 3 next calls to :random.uniform as 0.01, 0.89 and 0.11
-    :random.seed(0, 0, 0)
     {:ok, pid: pid}
   end
 
@@ -58,13 +53,13 @@ defmodule ExStatsD.DecoratorTest do
   test "basic wrapper with defaults" do
     assert DecoratedModule.simple === :simple
     expected = [@prefix<>"simple_0:1.234|ms"]
-    assert sent == expected
+    assert sent() == expected
   end
 
   test "custom metric name" do
     assert DecoratedModule.custom_name === :custom_name
     expected = ["test.custom_key:1.234|ms"]
-    assert sent == expected
+    assert sent() == expected
   end
 
   test "custom metric name does not leak to next function" do
@@ -74,7 +69,7 @@ defmodule ExStatsD.DecoratorTest do
       @prefix<>"custom_name_gone_0:1.234|ms",
       "test.custom_key:1.234|ms"
     ]
-    assert sent == expected
+    assert sent() == expected
   end
 
   test "custom metric name falling to next in match unless changed" do
@@ -86,7 +81,7 @@ defmodule ExStatsD.DecoratorTest do
       "test.multi_0_or_1:1.234|ms",
       "test.multi_0_or_1:1.234|ms"
     ]
-    assert sent == expected
+    assert sent() == expected
   end
 
   test "tags are set and don't leak" do
@@ -96,7 +91,7 @@ defmodule ExStatsD.DecoratorTest do
       @prefix<>"options_gone_0:1.234|ms",
       @prefix<>"with_options_0:1.234|ms|#mytag"
     ]
-    assert sent == expected
+    assert sent() == expected
   end
 
   test "tags fall through and get updated" do
@@ -108,7 +103,7 @@ defmodule ExStatsD.DecoratorTest do
       @prefix<>"multi_options_1:1.234|ms|#options_fall_through",
       @prefix<>"multi_options_1:1.234|ms|#options_fall_through",
     ]
-    assert sent == expected
+    assert sent() == expected
   end
 
   test "send using histogram when enabled in all following functions" do
@@ -118,7 +113,7 @@ defmodule ExStatsD.DecoratorTest do
       @prefix<>"multi_attrs_3:1.234|h",
       @prefix<>"multi_attrs_2:1.234|h"
     ]
-    assert sent == expected
+    assert sent() == expected
   end
 
   test "default options can be changed" do
@@ -128,7 +123,7 @@ defmodule ExStatsD.DecoratorTest do
       @prefix<>"unbound_attr_1:1.234|h|#mine",
       @prefix<>"ignored_attr_1:1.234|h|#mine"
     ]
-    assert sent == expected
+    assert sent() == expected
   end
 
   defp sent, do: :sys.get_state(ExStatsD).sink
